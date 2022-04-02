@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 
-
 app = FastAPI()
 
 # ---------------------------- Models ------------------------------------------
@@ -20,13 +19,12 @@ async def common_parameters(q: Optional[str] = None, skip: int = 0, limit: int =
 # ---------------------------- Routes ------------------------------------------
 
 @app.get("/hello")
-def hello_world():
+def hello_world(commons: dict = Depends(common_parameters)):
     name = os.environ.get("NAME", "World")
     return {"Hello": f"{name}"}
 
 
 @app.get("/")
-async def song_request(req: SongRequest, commons: dict = Depends(common_parameters)):
-    print(commons)
-    return req
+def song_request(stopid: Optional[int] = 0, commons: dict = Depends(common_parameters)):
+    return {"stopid": stopid}
 

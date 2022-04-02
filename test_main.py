@@ -11,6 +11,6 @@ def test_hello():
     # assert response.json() == {"msg": "Hello World"}
 
 def test_song_request():
-	response = client.get("/")
+	response = client.get("/", params={'stopid': '12345'})
 	assert response.status_code == 200
-	# assert response.json() == {"msg": "Hello World"}
+	assert response.json() == {"stopid": 12345}
