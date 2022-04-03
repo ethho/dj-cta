@@ -1,10 +1,12 @@
 import os
 from typing import Optional
+from random import randint
 import requests
 from fastapi import Depends, FastAPI, APIRouter
 from pydantic import BaseModel
-from .spt import spt_callbacks_router
+from .deps import get_rand_pl, get_sp
 
+SEC_THRESH = 15
 DEBUG = bool(os.environ.get('DEBUG', '0') == '1')
 app = FastAPI(debug=DEBUG)
 
@@ -79,14 +81,7 @@ async def spt_creds(q: Optional[str] = None, skip: int = 0, limit: int = 100):
 
 # ---------------------------- Routes ------------------------------------------
 
-app.include_router(spt_callbacks_router)
-app.include_router(
-    spt_callbacks_router,
-    prefix="/spt",
-    tags=["spt"],
-    # dependencies=[Depends(get_token_header)],
-    responses={404: {"description": "foobar"}},
-)
+# app.include_router(spt_callbacks_router)
 
 
 @app.get("/hello")
@@ -96,9 +91,37 @@ def hello_world(commons: dict = Depends(cta_creds)):
 
 
 @app.get("/")
-def song_request(stopid: Optional[int] = 0, cta_creds: dict = Depends(cta_creds)):
-    # return {"stopid": stopid}
-    return {"stopid": DEBUG}
+def song_request(sp = Depends(get_sp), playlist_uris = Depends(get_rand_pl)):
+    # TODO: get duration
+    stopdur = 180
+
+    # Choose a song
+    chosen = None
+    trs = list()
+    for pl in playlist_uris:
+        foo = sp.playlist_items(pl['uri'], limit=50, offset=randint(0, 10))['items']
+        trs.extend(foo)
+    trs = (
+        
+    )
+    chosen = [
+
+    ]
+
+    for pl in pls:
+        for tr in pl:
+            trdur = int(tr['track']['duration_ms']) / 1000.
+            if abs(trdur - stopdur) < SEC_THRESH:
+                chosen = tr['track']['external_urls']['spotify']
+                break
+        if chosen:
+            break
+
+    if not chosen or bool(os.environ.get("APRIL_FOOLS", "0") == "1"):
+        # chosen = "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=c0637df83ee748fe"
+        # TODO
+        chosen = "no track found"
+    return {'url': chosen}
 
 
 
