@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   deploy:
     docker:
@@ -24,8 +24,4 @@ jobs:
 workflows:
   deploy:
     jobs:
-      - deploy:
-          name: deploy-app
-          filters:
-            branches:
-              only: main
+      - deploy
