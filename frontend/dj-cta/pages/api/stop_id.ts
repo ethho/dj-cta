@@ -12,6 +12,7 @@ const stop_id = async (req: NextApiRequest, res: NextApiResponse) => {
     );
     console.log(data);
     const payload = await data.json();
+    console.log(payload);
     // Dummy response
     /*
     const payload = {

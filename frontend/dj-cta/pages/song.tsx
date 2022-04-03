@@ -3,6 +3,7 @@ import { AppContext } from "../components/AppContext";
 import clsx from "clsx";
 import colors from "../public/cta_data/theme.json";
 import { useRouter } from "next/router";
+import { motion } from "framer-motion";
 
 import Header from "../components/header";
 import HeartIcon from "../public/icons/heart.svg";
