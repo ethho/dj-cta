@@ -12,6 +12,7 @@ CTA_ARRIVALS = {
 
 def main():
     stpid = 30023
+    # stpid = 30139
     resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
         # mapid=None,
         # mapid=40120,
@@ -20,7 +21,7 @@ def main():
         # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
         # max=None,
         # rt="Org",
-        rt="Red",
+        # rt="Red",
         key=CTA_ARRIVALS['key'],
     ))
     

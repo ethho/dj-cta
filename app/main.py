@@ -46,16 +46,27 @@ class LocModel(BaseModel):
 async def get_stop_dur(stpid: int, rtid: Optional[str] = None) -> int:
     # Get CTA arrival time from stop ID
     # stpid = 30023
-    resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
-        # mapid=None,
-        # mapid=40120,
-        # stpid=None,
-        stpid=stpid,
-        # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
-        # max=None,
-        rt=rtid,
-        key=CTA_ARRIVALS['key'],
-    ))
+    if rtid is None:
+        resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
+            # mapid=None,
+            # mapid=40120,
+            # stpid=None,
+            stpid=stpid,
+            # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
+            # max=None,
+            key=CTA_ARRIVALS['key'],
+        ))
+    else:
+        resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
+            # mapid=None,
+            # mapid=40120,
+            # stpid=None,
+            stpid=stpid,
+            # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
+            # max=None,
+            rt=rtid,
+            key=CTA_ARRIVALS['key'],
+        ))
     
     # Parse XML response
     tree = ET.parse(StringIO(resp.text))
