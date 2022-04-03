@@ -2,11 +2,19 @@ import os
 from typing import Optional
 from random import randint
 import requests
+from datetime import datetime
+import xml.etree.ElementTree as ET
+from io import StringIO
 from fastapi import Depends, FastAPI, APIRouter
 from pydantic import BaseModel
 from .deps import get_sp
 
 SEC_THRESH = 15
+APRIL_FOOLS = bool(os.environ.get("APRIL_FOOLS", "0") == "1")
+CTA_ARRIVALS = {
+    'base_url': 'http://lapi.transitchicago.com/api/1.0/ttarrivals.aspx?',
+    'key': os.environ['CTA_API_KEY']
+}
 DEBUG = bool(os.environ.get('DEBUG', '0') == '1')
 app = FastAPI(debug=DEBUG)
 
@@ -21,9 +29,33 @@ class LocModel(BaseModel):
 # ---------------------------- Routes ------------------------------------------
 
 @app.get("/")
-async def song_request(sp = Depends(get_sp)):
-    # TODO: get duration
-    stopdur = 30
+async def song_request(stpid: int, sp = Depends(get_sp)):
+    # Get CTA arrival time from stop ID
+    # stpid = 30023
+    resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
+        # mapid=None,
+        # mapid=40120,
+        # stpid=None,
+        stpid=stpid,
+        # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
+        # max=None,
+        # rt=None,
+        key=CTA_ARRIVALS['key'],
+    ))
+    
+    # Parse XML response
+    tree = ET.parse(StringIO(resp.text))
+    root = tree.getroot()
+    arrt = root.find('./eta/arrT')
+    stcode = root.find('./errCd')
+    if int(stcode.text) > 0:
+        # TODO
+        assert 0, resp.text
+
+    # Formatted like 20220402 23:20:25
+    arr_dt = datetime.strptime(arrt.text, "%Y%m%d %H:%M:%S")
+    stopdur = (arr_dt - datetime.now()).seconds
+    # print(f"{stopdur=}")
 
     # Choose a song that fits the duration criteria
     chosen = None
@@ -39,7 +71,8 @@ async def song_request(sp = Depends(get_sp)):
                     trdur = int(tr.get('track', dict()).get('duration_ms', 0)) / 1000.
                 except AttributeError:
                     continue
-                if abs(trdur - stopdur) < SEC_THRESH:
+                secs_diff = trdur - stopdur
+                if abs(secs_diff) < SEC_THRESH:
                     chosen = tr['track']['external_urls']['spotify']
                     break
                 else:
@@ -52,10 +85,13 @@ async def song_request(sp = Depends(get_sp)):
             break
         # TODO: increment SEC_THRESH if we're having trouble finding a match
 
+    # some logging
+    # TODO: https://cloud.google.com/logging/docs/setup/python
+
     # fallback URL
-    if not chosen or bool(os.environ.get("APRIL_FOOLS", "0") == "1"):
+    if not chosen or APRIL_FOOLS:
         # chosen = "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=c0637df83ee748fe"
         # TODO
         chosen = "no track found"
 
-    return {'url': chosen}
+    return {'url': chosen, 'track_duration': trdur, 'wait_duration': stopdur}
