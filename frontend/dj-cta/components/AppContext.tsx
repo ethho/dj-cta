@@ -14,6 +14,7 @@ export type AppContextType = {
   line?: LineColorsType;
   stop_name?: string;
   stop_id?: number;
+  bound_for?: string;
   updateAppContext?: (context: AppContextType) => void;
 };
 

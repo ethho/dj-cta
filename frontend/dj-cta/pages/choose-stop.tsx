@@ -68,7 +68,7 @@ const ChooseStop = () => {
   return (
     <Container>
       <Header />
-      <h1 className="text-5xl tracking-tighter font-bold mx-6 my-12">
+      <h1 className="text-5xl tracking-tighter font-bold mx-6 my-8">
         Pick your stop
       </h1>
       <SectionBox title="Line">
@@ -137,6 +137,7 @@ const ChooseStop = () => {
                         s.STATION_NAME == context.stop_name &&
                         (s.DIRECTION_ID == "W" || s.DIRECTION_ID == "N")
                     )[0].STOP_ID,
+                    bound_for: cta_routes[context.line][0],
                   })
                 : {}
             }
@@ -157,6 +158,7 @@ const ChooseStop = () => {
                         s.STATION_NAME == context.stop_name &&
                         (s.DIRECTION_ID == "E" || s.DIRECTION_ID == "S")
                     )[0].STOP_ID,
+                    bound_for: cta_routes[context.line].at(-1),
                   })
                 : {}
             }
