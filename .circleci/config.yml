@@ -16,11 +16,12 @@ jobs:
           command: |
             echo $GCLOUD_KEY | base64 --decode --ignore-garbage > $HOME/gcloud-service-key.json
             gcloud auth activate-service-account ${GCLOUD_SERVICE_ACCOUNT} --key-file=$HOME/gcloud-service-key.json --project=${GCLOUD_PROJECT}
+            gcloud --quiet config set compute/zone ${GCLOUD_ZONE} 
             gcloud --quiet config set project ${GCLOUD_PROJECT}
-            gcloud --quiet config set compute/zone ${GCLOUD_ZONE}            
+            gcloud --quiet config set run/region ${GCLOUD_ZONE}
       - deploy:
           name: Deploying to App Engine
-          command: gcloud run deploy --env-vars-file .env.yaml --source .
+          command: gcloud run deploy --env-vars-file .env.yaml --source . --region ${GCLOUD_ZONE}
 
 workflows:
   deploy:
