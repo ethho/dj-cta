@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from .deps import get_sp
 
 SEC_THRESH = 15
-APRIL_FOOLS = bool(os.environ.get("APRIL_FOOLS", "0") == "1")
+APRIL_FOOLS = False
 CTA_ARRIVALS = {
     'base_url': 'http://lapi.transitchicago.com/api/1.0/ttarrivals.aspx?',
     'key': os.environ['CTA_API_KEY']
