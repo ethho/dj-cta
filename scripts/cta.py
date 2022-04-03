@@ -26,40 +26,16 @@ def main():
     # Parse XML response
     tree = ET.parse(StringIO(resp.text))
     root = tree.getroot()
-    try:
-        # stops = [
-        #     s for s in 
-        #     root.findall('./eta/stpId')
-        #     if int(s.text) == stpid
-        # ]
-        # if not stops:
-        #     # TODO
-        #     assert 0, resp.text
-        arrt = root.find('./eta/arrT')
-        breakpoint()
-
-        stcode = root.find('./errCd')
-        if int(stcode.text) > 0:
-            # TODO
-            assert 0, resp.text
-    except AssertionError as e:
-        print(resp.text)
-        raise e
+    arrt = root.find('./eta/arrT')
+    stcode = root.find('./errCd')
+    if int(stcode.text) > 0:
+        # TODO
+        assert 0, resp.text
 
     # 20220402 23:20:25
-    arr_dt = datetime.strptime(tmst.text, "%Y%m%d %H:%M:%S")
-    stopdur = arr_dt - datetime.now()
-    breakpoint()
-
-
-
-
-        
-  
-    root.text
-    breakpoint()
-    pp(resp)
-
+    arr_dt = datetime.strptime(arrt.text, "%Y%m%d %H:%M:%S")
+    stopdur = (arr_dt - datetime.now()).seconds
+    print(f"{stopdur=}")
 
 if __name__ == '__main__':
     main()
