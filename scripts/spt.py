@@ -24,30 +24,39 @@ tr['track']['external_urls']['spotify']
 breakpoint()
 '''
 
-def main(playlist_uris):
+SEC_THRESH = 15
+
+def main():
     # TODO: get duration
-    stopdur = 180
+    stopdur = 60
 
-    # Choose a song
+    # Choose a song that fits the duration criteria
     chosen = None
-    trs = list()
-    for pl in playlist_uris:
-
-        tracks = sp.playlist_items(pl, limit=50, offset=randint(0, 10))['items']
-        trs.extend(foo)
-    trs = (
-        
-    )
-
-    for pl in pls:
-        for tr in pl:
-            trdur = int(tr['track']['duration_ms']) / 1000.
-            if abs(trdur - stopdur) < SEC_THRESH:
-                chosen = tr['track']['external_urls']['spotify']
-                break
-        if chosen:
+    durs = list()
+    playlists = sp.user_playlists('spotify', limit=50)
+    while playlists:
+        for pl in playlists['items']:
+            tracks = sp.playlist_items(pl['uri'], limit=100)['items']
+            for tr in tracks:
+                if not tr:
+                    continue
+                try:
+                    trdur = int(tr.get('track', dict()).get('duration_ms', 0)) / 1000.
+                except AttributeError:
+                    continue
+                if abs(trdur - stopdur) < SEC_THRESH:
+                    chosen = tr['track']['external_urls']['spotify']
+                    break
+                else:
+                    durs.append(trdur)
+            if chosen: break
+        if chosen: break
+        if playlists['next']:
+            playlists = sp.next(playlists)
+        else:
             break
 
+    # fallback
     if not chosen or bool(os.environ.get("APRIL_FOOLS", "0") == "1"):
         # chosen = "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=c0637df83ee748fe"
         # TODO
@@ -64,8 +73,6 @@ def get_rand_pl(max_iters: int = 20):
     while playlists:
         for pl in playlists['items']:
             yield pl['uri']
-        if i == randint(0, max_iters):
-            break
         if playlists['next']:
             playlists = sp.next(playlists)
         else:
@@ -73,5 +80,5 @@ def get_rand_pl(max_iters: int = 20):
 
 
 if __name__ == '__main__':
-    pls = get_rand_pl()
-    main(pls)
+    # pls = get_rand_pl()
+    main()
