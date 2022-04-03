@@ -6,6 +6,7 @@ export type Stop = {
   stop_name?: string;
   stop_id?: number;
   bound_for?: string;
+  distance?: number;
 };
 
 export default function useFavorites(stop: Stop | undefined) {

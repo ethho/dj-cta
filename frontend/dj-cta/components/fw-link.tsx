@@ -9,6 +9,7 @@ import { CSSProperties } from "react";
 type FWLinkProps = {
   text: string;
   bgColor?: LineColorsType;
+  disabled?: boolean;
   href: string;
   size: "large" | "small";
 };
@@ -32,7 +33,7 @@ const FWLink: React.FC<FWLinkProps> = (props) => {
               "font-bold tracking-tighter mt-8 pt-4 hover:underline underline-offset-8",
               props.size == "large" ? "text-3xl" : "text-2xl"
             )}
-            href={props.href}
+            href={props.disabled ? undefined : props.href}
           >
             {props.text}
             <span className="ml-2">

@@ -3,14 +3,14 @@ import { NextApiRequest, NextApiResponse } from 'next'
 
 const stop_id = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
-    query: { stpid }
+    query: { lat, lon }
   } = req;
-  //console.log("This is running!");
+  console.log("This is running!");
   try {
     const data = await fetch(
-      `https://dj-cta-2uyukedvua-uc.a.run.app/?stpid=${stpid}`
+      `https://dj-cta-2uyukedvua-uc.a.run.app/nearest_stops?lon=${lon}&lat=${lat}`
     );
-    console.log(data);
+    // console.log(data);
     const payload = await data.json();
     // Dummy response
     /*

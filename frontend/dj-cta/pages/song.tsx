@@ -15,13 +15,17 @@ type SongState = {
   song_duration?: number;
   song_url?: string;
   favorite?: Stop;
+  track_uri: string;
   time_left: number;
 };
 
 export default function Song() {
   const context = useContext(AppContext);
   const router = useRouter();
-  const [state, setState] = useState<SongState>({ time_left: NaN });
+  const [state, setState] = useState<SongState>({
+    time_left: NaN,
+    track_uri: "1vUjqIGapgMyAFXOLUrYHO",
+  });
   // const favorites = useFavorites(undefined);
 
   let style = {
@@ -109,11 +113,7 @@ export default function Song() {
         </div>
         <div className="border-t-2 border-white flex-col flex">
           <iframe
-            src={
-              state.song_url
-                ? state.song_url
-                : "https://open.spotify.com/embed/track/1vUjqIGapgMyAFXOLUrYHO?utm_source=generator&theme=0"
-            }
+            src={`https://open.spotify.com/embed/track/${state.track_uri}?utm_source=generator&theme=0`}
             width="100%"
             height="80"
             frameBorder="0"

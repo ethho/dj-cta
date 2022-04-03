@@ -1,6 +1,8 @@
-import { useContext, useState } from "react";
-import colors from "../public/cta_data/theme.json";
+import { useContext, useEffect, useState } from "react";
+import { Stop } from "../utils/useFavorites";
+import StopSign from "../components/stop-sign";
 
+// Cmponents
 import {
   LineColorsType,
   AppContext,
@@ -9,8 +11,11 @@ import {
 import Container from "../components/container";
 import Header from "../components/header";
 import FWLink from "../components/fw-link";
+import LineSelect from "../components/line-select";
+import StopSelect from "../components/stop-select";
+
+// Assets
 import clsx from "clsx";
-import TrainIcon from "../public/icons/train.svg";
 import CircleArrow from "../public/icons/circle-arrow.svg";
 import l_stops from "../public/l-stops.json";
 import cta_routes from "../public/cta_data/routes.json";
@@ -25,45 +30,95 @@ const SectionBox: React.FC<{ title: string }> = ({ children, title }) => (
 const ChooseStop = () => {
   const context: AppContextType = useContext(AppContext);
   type Dir = "N" | "S" | "E" | "W" | undefined;
-  const [state, setState] = useState(undefined);
-
-  let style = {
-    "--line": context.line ? colors[context.line] : "white",
-  } as React.CSSProperties;
-
-  type LBProps = { bgColor: LineColorsType };
-  const LineBox = (props: LBProps) => {
-    let style = { "--line": colors[props.bgColor] } as React.CSSProperties;
-    return (
-      <div
-        style={style}
-        className={clsx(
-          "w-auto h-16 flex items-center bg-[color:var(--line)]",
-          context.line == props.bgColor
-            ? "border-4 border-white"
-            : "border-none"
-        )}
-        onClick={() =>
-          context.updateAppContext
-            ? context.updateAppContext({
-                ...context,
-                line: props.bgColor,
-                stop_name: undefined,
-                stop_id: undefined,
-              })
-            : {}
-        }
-      >
-        {context.line == props.bgColor ? (
-          <TrainIcon className="mx-auto" />
-        ) : (
-          <p className="tracking-tight capitalize font-bold text-xl mx-auto">
-            {props.bgColor}
-          </p>
-        )}
-      </div>
-    );
+  type ChooseStopState = {
+    dir?: Dir;
+    stops?: Stop[];
+    geo_status: string;
   };
+
+  const [state, setState] = useState<ChooseStopState>({
+    geo_status: "Enable location access to find stops near you",
+  });
+
+  function getLine(stop: string) {
+    let line = l_stops.filter((l) => l.STATION_NAME == stop)[0];
+    if (line) {
+      let foo = Object.entries(line).filter(([k, v]) => v === true);
+      if (foo) {
+        return foo[0][0].toLowerCase();
+      } else {
+        return undefined;
+      }
+    } else {
+      return undefined;
+    }
+  }
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        if (!navigator.geolocation) {
+          setState({
+            ...state,
+            geo_status: "Geolocation is not supported by your browser",
+          });
+        } else {
+          setState({ ...state, geo_status: "Locating..." });
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              let res = await fetch(
+                `/api/get_nearby_stops?lon=${position.coords.latitude}&lat=${position.coords.longitude}`
+              );
+              let json = await res.json();
+              if (json.detail == "Not Found") {
+                setState({
+                  ...state,
+                  geo_status: "Can't retrieve your location",
+                });
+              } else {
+                console.log(json.stops);
+                if (json.stops) {
+                  try {
+                    console.log("Got here!");
+                    let new_stops = json.stops.map(
+                      (s: {
+                        stop_id: number;
+                        stop_name: string;
+                        miles_away: number;
+                      }) => ({
+                        stop_id: s.stop_id,
+                        stop_name: s.stop_name,
+                        distance: s.miles_away,
+                        line: getLine(s.stop_name),
+                      })
+                    );
+                    console.log(new_stops);
+                    setState({
+                      ...state,
+                      stops: new_stops,
+                      geo_status: "Here are the nearest stations to you:",
+                    });
+                  } catch {
+                    setState({
+                      ...state,
+                      geo_status: "Could not parse stops",
+                    });
+                  }
+                }
+              }
+            },
+            () => {
+              setState({
+                ...state,
+                geo_status: "Can't retrieve your location",
+              });
+            }
+          );
+        }
+      } catch {}
+    };
+    getData().catch(console.error);
+  }, []);
 
   return (
     <Container>
@@ -71,55 +126,41 @@ const ChooseStop = () => {
       <h1 className="text-5xl tracking-tighter font-bold mx-6 my-8">
         Pick your stop
       </h1>
+      <div className="px-6 mt-6">
+        <h2 className="tracking-tighter font-bold text-3xl pt-3 border-t-2 dark:border-white">
+          Stops near you
+        </h2>
+        <p className="tracking-tight my-4">{state.geo_status}</p>
+      </div>
+      {state.stops
+        ?.filter((s) => s.line)
+        .slice(0, 5)
+        .map((s, k) => (
+          <StopSign
+            key={k}
+            stop={s}
+            onClick={(s) =>
+              context.updateAppContext
+                ? context.updateAppContext({
+                    ...context,
+                    stop_id: s.stop_id,
+                    line: s.line,
+                    stop_name: s.stop_name,
+                  })
+                : {}
+            }
+          />
+        ))}
+      <div className="px-6 mt-6">
+        <h2 className="mb-4 tracking-tighter font-bold text-3xl pt-3 border-t-2 dark:border-white">
+          Choose stop manually
+        </h2>
+      </div>
       <SectionBox title="Line">
-        <div className="grid grid-cols-4 gap-0 ">
-          <LineBox bgColor="red" />
-          <LineBox bgColor="blue" />
-          <LineBox bgColor="brown" />
-          <LineBox bgColor="green" />
-          <LineBox bgColor="orange" />
-          <LineBox bgColor="pink" />
-          <LineBox bgColor="purple" />
-          <LineBox bgColor="yellow" />
-        </div>
+        <LineSelect />
       </SectionBox>
       <SectionBox title="Stop">
-        <div
-          style={style}
-          className={clsx(
-            "mx-6 mt-4 border-l-[color:var(--line)] border-l-8",
-            context.line ? "visible" : "hidden"
-          )}
-        >
-          {context.line &&
-            cta_routes[context.line]?.map((s, k) => (
-              <div
-                className={clsx(
-                  "ml-4 text-xl display-block",
-                  context.stop_name == s
-                    ? ""
-                    : "before:absolute before:ml-[-24px] before:mt-[9px] before:w-2 before:h-2 before:rounded-full before:bg-white"
-                )}
-                key={k}
-              >
-                <button
-                  onClick={() =>
-                    context.updateAppContext
-                      ? context.updateAppContext({ ...context, stop_name: s })
-                      : {}
-                  }
-                  className={clsx(
-                    "text-tight mb-2 text-xl",
-                    context.stop_name == s
-                      ? "font-bold before:absolute before:ml-[-24px] before:mt-[9px] before:w-2 before:h-2 before:rounded-full before:border-2 before:border-black before:bg-white"
-                      : "text-regular"
-                  )}
-                >
-                  {s}
-                </button>
-              </div>
-            ))}
-        </div>
+        <StopSelect />
       </SectionBox>
       <SectionBox title="Direction">
         <div className="grid grid-cols-2 w-auto border-black border-t-8">
@@ -137,14 +178,14 @@ const ChooseStop = () => {
                         s.STATION_NAME == context.stop_name &&
                         (s.DIRECTION_ID == "W" || s.DIRECTION_ID == "N")
                     )[0].STOP_ID,
-                    bound_for: cta_routes[context.line][0],
+                    bound_for: cta_routes[context.line]?.at(0),
                   })
                 : {}
             }
           >
             <CircleArrow className="w-6 h-6 rotate-180 inline mr-2" />
             {context.stop_name && context.line
-              ? `To ${cta_routes[context.line][0]}`
+              ? `To ${cta_routes[context.line]?.at(0)}`
               : "Choose a stop"}
           </button>
           <button
@@ -158,7 +199,7 @@ const ChooseStop = () => {
                         s.STATION_NAME == context.stop_name &&
                         (s.DIRECTION_ID == "E" || s.DIRECTION_ID == "S")
                     )[0].STOP_ID,
-                    bound_for: cta_routes[context.line].at(-1),
+                    bound_for: cta_routes[context.line]?.at(-1),
                   })
                 : {}
             }
@@ -175,6 +216,7 @@ const ChooseStop = () => {
         size="small"
         bgColor={context.line}
         href="/song"
+        disabled={!context.stop_id}
       />
     </Container>
   );
