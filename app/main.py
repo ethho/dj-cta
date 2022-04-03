@@ -3,7 +3,7 @@ from typing import Optional
 import requests
 from fastapi import Depends, FastAPI, APIRouter
 from pydantic import BaseModel
-from .spt_auth import spt_callbacks_router
+from .spt import spt_callbacks_router
 
 DEBUG = bool(os.environ.get('DEBUG', '0') == '1')
 app = FastAPI(debug=DEBUG)
@@ -82,7 +82,7 @@ async def spt_creds(q: Optional[str] = None, skip: int = 0, limit: int = 100):
 app.include_router(spt_callbacks_router)
 app.include_router(
     spt_callbacks_router,
-    prefix="/spt_auth",
+    prefix="/spt",
     tags=["spt"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "foobar"}},

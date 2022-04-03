@@ -16,7 +16,7 @@ def test_song_request():
 	assert response.json() == {"stopid": 12345}, response.json()
 
 
-def test_hello_spt_callbacks():
-    response = client.get("/spt_auth")
+def test_spt_token():
+    response = client.get("/spt_auth/token")
     assert response.status_code == 200
     # assert response.json() == {"msg": "Hello World"}
