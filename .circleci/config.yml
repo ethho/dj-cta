@@ -14,7 +14,7 @@ jobs:
       - run:
           name: Set up gcloud config
           command: |
-            echo $GCLOUD_KEY | base64 --decode | gcloud auth activate-service-account --key-file=-
+            echo $GCLOUD_KEY | base64 --decode | gcloud auth activate-service-account ${GCLOUD_SERVICE_ACCOUNT} --key-file=-
             gcloud --quiet config set project ${GCLOUD_PROJECT}
             gcloud --quiet config set compute/zone ${GCLOUD_ZONE}            
       - deploy:
