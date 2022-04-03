@@ -1,27 +1,35 @@
 import os
+import time
+import asyncio
 from math import radians, cos, sin, asin, sqrt
 import pandas as pd
 from typing import Optional, Union
-from random import randint
+from random import randint, shuffle
 import requests
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from io import StringIO
-from fastapi import Depends, FastAPI, APIRouter, HTTPException, status
+from fastapi import Depends, FastAPI, APIRouter, HTTPException, status, Request, Response
 from pydantic import BaseModel
 from .deps import get_sp
 
 RICK_MODE = False
 RICK_OBJ = {
     'url':  "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=c0637df83ee748fe",
+    'uri': 'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
     'track_duration': 213,
     'wait_duration': -1,
 }
+REQUEST_TIMEOUT_ERROR = 30
 SEC_THRESH = 15
 CTA_ARRIVALS = {
     'base_url': 'http://lapi.transitchicago.com/api/1.0/ttarrivals.aspx?',
     'key': os.environ['CTA_API_KEY']
 }
+ADDITIONAL_PLISTS = [
+    {'uri': '5XnkjnyMyg2ZRPBCYVHkbw'},
+    {'uri': '71P8SkCDFgziTWkPJDfsRb'},
+]
 DEBUG = bool(os.environ.get('DEBUG', '0') == '1')
 app = FastAPI(debug=DEBUG)
 
@@ -75,18 +83,24 @@ async def get_stop_dur(stpid: int, rtid: Optional[str] = None) -> int:
     # print(f"{stopdur=}")
 
 
-async def get_track(sp, stopdur: int, tolerance: int):
+async def get_track(sp, stopdur: int, tolerance: int, start_falloff: int = 1000):
     # -1 means there are no trains arriving soon
     if stopdur < 0:
         return RICK_OBJ
     
     # Choose a song that fits the duration criteria
+    init_tol = tolerance
     chosen = None
     durs = list()
     playlists = sp.user_playlists('spotify', limit=50)
     while playlists:
-        # TODO: manually add some playlists with really long and really short songs
-        for pl in playlists['items']:
+        pls = ADDITIONAL_PLISTS
+        # manually add some playlists with really long and really short songs
+        pls.extend(playlists['items'])
+        # DEBUG 
+        # pls = ADDITIONAL_PLISTS
+        shuffle(pls)
+        for pl in pls:
             tracks = sp.playlist_items(pl['uri'], limit=100)['items']
             for tr in tracks:
                 if not tr:
@@ -99,6 +113,7 @@ async def get_track(sp, stopdur: int, tolerance: int):
                 if abs(secs_diff) < tolerance:
                     chosen = {
                         'url': tr['track']['external_urls']['spotify'],
+                        'uri': tr['track']['uri'],
                         'track_duration': int(trdur),
                         'wait_duration': int(stopdur)
                     }
@@ -107,6 +122,12 @@ async def get_track(sp, stopdur: int, tolerance: int):
                     durs.append(trdur)
             if chosen: break
         if chosen: break
+        # if (tolerance / init_tol) > 2**6:
+        #     raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+        #                          detail=f"couldn't find a track of acceptable length ({stopdur=})")
+        elif len(durs) > start_falloff:
+            tolerance *= 2.
+            print(f"increasing tolerance to {tolerance=}")
         if playlists['next']:
             playlists = sp.next(playlists)
         else:
