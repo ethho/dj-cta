@@ -19,13 +19,15 @@ def main():
         stpid=stpid,
         # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
         # max=None,
-        # rt=None,
+        # rt="Org",
+        rt="Red",
         key=CTA_ARRIVALS['key'],
     ))
     
     # Parse XML response
     tree = ET.parse(StringIO(resp.text))
     root = tree.getroot()
+    breakpoint()
     arrt = root.find('./eta/arrT')
     stcode = root.find('./errCd')
     if int(stcode.text) > 0:

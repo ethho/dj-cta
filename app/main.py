@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from io import StringIO
-from fastapi import Depends, FastAPI, APIRouter
+from fastapi import Depends, FastAPI, APIRouter, HTTPException, status
 from pydantic import BaseModel
 from .deps import get_sp
 
@@ -26,10 +26,9 @@ class LocModel(BaseModel):
     # price: float
     # tax: Optional[float] = None
 
-# ---------------------------- Routes ------------------------------------------
+# ----------------------------- Utils ------------------------------------------
 
-@app.get("/")
-async def song_request(stpid: int, sp = Depends(get_sp)):
+async def get_stop_dur(stpid: int, rtid: Optional[str] = None) -> int:
     # Get CTA arrival time from stop ID
     # stpid = 30023
     resp = requests.get(CTA_ARRIVALS['base_url'], params=dict(
@@ -39,7 +38,7 @@ async def song_request(stpid: int, sp = Depends(get_sp)):
         stpid=stpid,
         # https://www.transitchicago.com/traintracker/arrivaltimes/?sid=40120
         # max=None,
-        # rt=None,
+        rt=rtid,
         key=CTA_ARRIVALS['key'],
     ))
     
@@ -48,20 +47,29 @@ async def song_request(stpid: int, sp = Depends(get_sp)):
     root = tree.getroot()
     arrt = root.find('./eta/arrT')
     stcode = root.find('./errCd')
-    if int(stcode.text) > 0:
-        # TODO
-        assert 0, resp.text
+    if int(stcode.text) > 0 or arrt is None:
+        detail = f"could not fetch wait time for stop ID '{stpid}'"
+        if rtid:
+            detail += f" (for route ID '{rtid}')"
+        cta_err = root.find('./errNm')
+        if cta_err:
+            detail += f" (CTA API error: {cta_err.text})"
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=detail)
 
     # Formatted like 20220402 23:20:25
     arr_dt = datetime.strptime(arrt.text, "%Y%m%d %H:%M:%S")
-    stopdur = (arr_dt - datetime.now()).seconds
+    return int((arr_dt - datetime.now()).seconds)
     # print(f"{stopdur=}")
 
+
+async def get_track(sp, stopdur: int, tolerance: int):
     # Choose a song that fits the duration criteria
     chosen = None
     durs = list()
     playlists = sp.user_playlists('spotify', limit=50)
     while playlists:
+        # TODO: manually add some playlists with really long and really short songs
         for pl in playlists['items']:
             tracks = sp.playlist_items(pl['uri'], limit=100)['items']
             for tr in tracks:
@@ -72,8 +80,12 @@ async def song_request(stpid: int, sp = Depends(get_sp)):
                 except AttributeError:
                     continue
                 secs_diff = trdur - stopdur
-                if abs(secs_diff) < SEC_THRESH:
-                    chosen = tr['track']['external_urls']['spotify']
+                if abs(secs_diff) < tolerance:
+                    chosen = {
+                        'url': tr['track']['external_urls']['spotify'],
+                        'track_duration': int(trdur),
+                        'wait_duration': int(stopdur)
+                    }
                     break
                 else:
                     durs.append(trdur)
@@ -93,5 +105,12 @@ async def song_request(stpid: int, sp = Depends(get_sp)):
         # chosen = "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=c0637df83ee748fe"
         # TODO
         chosen = "no track found"
+    return chosen
 
-    return {'url': chosen, 'track_duration': trdur, 'wait_duration': stopdur}
+# ----------------------------- Endpoints --------------------------------------
+
+@app.get("/")
+async def song_request(stpid: int, rtid: Optional[str] = None, sp = Depends(get_sp)):
+    stopdur = await get_stop_dur(stpid, rtid)
+    chosen = await get_track(sp, stopdur, tolerance=SEC_THRESH)
+    return chosen
