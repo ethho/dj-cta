@@ -1,4 +1,11 @@
-# Progressive Web App Example
+# DJ CTA Frontend
+
+Preview development version:
+
+```bash
+npm install
+npm run dev
+```
 
 This example uses [`next-pwa`](https://github.com/shadowwalker/next-pwa) to create a progressive web app (PWA) powered by [Workbox](https://developers.google.com/web/tools/workbox/).
 

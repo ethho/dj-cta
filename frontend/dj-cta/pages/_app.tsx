@@ -9,7 +9,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const [context, setContext] = useState({});
 
   return (
-    <AppContext.Provider value={{ ...context, setContext }}>
+    <AppContext.Provider value={{ ...context, updateAppContext: setContext }}>
       <Head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />

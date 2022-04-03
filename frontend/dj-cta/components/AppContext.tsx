@@ -1,20 +1,20 @@
 import { createContext } from "react";
 
+export type LineColorsType =
+  | "red"
+  | "blue"
+  | "brown"
+  | "green"
+  | "orange"
+  | "pink"
+  | "purple"
+  | "yellow";
+
 export type AppContextType = {
-  line?:
-    | "red"
-    | "blue"
-    | "brown"
-    | "green"
-    | "orange"
-    | "pink"
-    | "purple"
-    | "yellow";
+  line?: LineColorsType;
   stop_name?: string;
-  stop_id?: string;
-  setContext: (context: AppContextType) => void;
+  stop_id?: number;
+  updateAppContext?: (context: AppContextType) => void;
 };
 
-export const AppContext = createContext({
-  setContext: (x: AppContextType) => {},
-});
+export const AppContext = createContext<AppContextType>({});
