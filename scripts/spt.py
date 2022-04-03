@@ -33,8 +33,10 @@ def main():
     # Choose a song that fits the duration criteria
     chosen = None
     durs = list()
+    print('getting all pl')
     playlists = sp.user_playlists('spotify', limit=50)
     while playlists:
+        print('getting playlists...')
         for pl in playlists['items']:
             tracks = sp.playlist_items(pl['uri'], limit=100)['items']
             for tr in tracks:

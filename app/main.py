@@ -84,6 +84,9 @@ async def get_stop_dur(stpid: int, rtid: Optional[str] = None) -> int:
 
 
 async def get_track(sp, stopdur: int, tolerance: int, start_falloff: int = 1000):
+    # TROLL MODe
+    return RICK_OBJ
+
     # -1 means there are no trains arriving soon
     if stopdur < 0:
         return RICK_OBJ
@@ -194,7 +197,9 @@ async def get_nearest_stops(lat: float, lon: float, limit: int = None) -> int:
 
 @app.get("/")
 async def song_request(stpid: Union[int, str] = 'nearest', rtid: Optional[str] = None, 
-                       sp = Depends(get_sp), lat: Optional[float] = None, lon: Optional[float] = None):
+                    #    sp = Depends(get_sp), 
+                    sp = None,
+                       lat: Optional[float] = None, lon: Optional[float] = None):
     if stpid == 'nearest':
         if lat is None or lon is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
@@ -207,6 +212,11 @@ async def song_request(stpid: Union[int, str] = 'nearest', rtid: Optional[str] =
                                 detail=f"could not find a nearest stop for {lat=} {lon=}")
     stopdur = await get_stop_dur(stpid, rtid)
     chosen = await get_track(sp, stopdur, tolerance=SEC_THRESH)
+
+    # TROLL MODE
+    chosen['wait_duration'] = stopdur
+    chosen['uri'] = chosen['uri'].split(':')[-1]
+
     if chosen['wait_duration'] < 0:
         chosen['detail'] = f"found no arrivals at stop ID {stpid} (route ID {rtid}) in the near future"
     return chosen
